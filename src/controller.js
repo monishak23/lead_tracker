@@ -39,6 +39,52 @@ async function createLead(req, res) {
   }
 }
 
+async function updateLeadStatus(req, res) {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!id || !status) {
+    return res.status(400).json({
+      error: 'id and status are required.',
+    });
+  }
+
+  try {
+    const query = `
+      UPDATE leads
+      SET status = $1::lead_status
+      WHERE id = $2
+      RETURNING id, name, email, phone, status, created_at;
+    `;
+
+    const values = [status, id];
+
+    const result = await pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Lead not found.',
+      });
+    }
+
+    return res.status(200).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating lead status:', err);
+
+    // Invalid enum value
+    if (err.code === '22P02') {
+      return res.status(400).json({
+        error: 'Invalid status. Allowed values: NEW, CONTACTED, QUALIFIED, LOST.',
+      });
+    }
+
+    return res.status(500).json({
+      error: 'Internal server error.',
+    });
+  }
+}
+
 module.exports = {
   createLead,
+  updateLeadStatus,
 };
