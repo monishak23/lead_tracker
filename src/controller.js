@@ -84,7 +84,40 @@ async function updateLeadStatus(req, res) {
   }
 }
 
+async function getLeads(req, res) {
+  const { search } = req.query;
+
+  try {
+    const query = `
+      SELECT id, name, email, phone, status, created_at
+      FROM leads
+      WHERE
+        ($1 = '' OR
+         name ILIKE '%' || $1 || '%' OR
+         email ILIKE '%' || $1 || '%' OR
+         phone ILIKE '%' || $1 || '%')
+      ORDER BY created_at DESC;
+    `;
+
+    const values = [search || ''];
+
+    const result = await pool.query(query, values);
+
+    return res.status(200).json({
+      data: result.rows,
+      count: result.rows.length,
+    });
+  } catch (err) {
+    console.error('Error fetching leads:', err);
+
+    return res.status(500).json({
+      error: 'Internal server error.',
+    });
+  }
+}
+
 module.exports = {
   createLead,
   updateLeadStatus,
+  getLeads,
 };
