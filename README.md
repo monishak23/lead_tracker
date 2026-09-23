@@ -10,8 +10,7 @@ REST API for a lead generation tracker — create, list, search, and update the 
 - **Database:** PostgreSQL (hosted on Neon)
 - **Data model:** one `leads` table — `id` (UUID), `name`, `email` (unique), `phone`,
   `status` (enum), `created_at`
-- **Request flow:** route → controller → `pool.query()` with parameterized SQL. No ORM —
-  raw SQL was a deliberate choice (see Trade-offs).
+- **Request flow:** route → controller → `pool.query()` with parameterized SQL.
 
 ### Endpoints
 
