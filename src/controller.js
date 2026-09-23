@@ -85,7 +85,7 @@ async function updateLeadStatus(req, res) {
 }
 
 async function getLeads(req, res) {
-  const { search } = req.query;
+  const { search, status } = req.query;
 
   try {
     const query = `
@@ -96,10 +96,15 @@ async function getLeads(req, res) {
          name ILIKE '%' || $1 || '%' OR
          email ILIKE '%' || $1 || '%' OR
          phone ILIKE '%' || $1 || '%')
+        AND
+        ($2 = '' OR status = $2::lead_status)
       ORDER BY created_at DESC;
     `;
 
-    const values = [search || ''];
+    const values = [
+      search || '',
+      status || '',
+    ];
 
     const result = await pool.query(query, values);
 
