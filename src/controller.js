@@ -86,31 +86,39 @@ async function updateLeadStatus(req, res) {
 
 async function getLeads(req, res) {
   const { search, status } = req.query;
+  const limit = Math.max(1, parseInt(req.query.limit, 10) || 10);
+  const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
 
   try {
     const query = `
-      SELECT id, name, email, phone, status, created_at
+      SELECT id, name, email, phone, status, created_at,
+        COUNT(*) OVER() AS full_count
       FROM leads
       WHERE
         ($1 = '' OR
-         name ILIKE '%' || $1 || '%' OR
-         email ILIKE '%' || $1 || '%' OR
-         phone ILIKE '%' || $1 || '%')
+          name ILIKE '%' || $1 || '%' OR
+          email ILIKE '%' || $1 || '%' OR
+          phone ILIKE '%' || $1 || '%')
         AND
         ($2 = '' OR status = $2::lead_status)
-      ORDER BY created_at DESC;
+      ORDER BY created_at DESC
+      LIMIT $3 OFFSET $4;
     `;
 
     const values = [
       search || '',
       status || '',
+      limit,
+      offset,
     ];
 
     const result = await pool.query(query, values);
+    const count = result.rows.length > 0 ? parseInt(result.rows[0].full_count, 10) : 0;
+    const data = result.rows.map(({ full_count, ...rest }) => rest);
 
     return res.status(200).json({
-      data: result.rows,
-      count: result.rows.length,
+      data: data,
+      count: count,
     });
   } catch (err) {
     console.error('Error fetching leads:', err);
